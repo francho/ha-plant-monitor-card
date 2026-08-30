@@ -1,0 +1,19 @@
+title: Plant Monitor Card
+views:
+  - title: Plants
+    path: plants
+    icon: mdi:leaf
+    cards:
+      - type: markdown
+        content: |
+          # Plant Monitor Card
+          Change the **input_number** helpers in Developer Tools to test healthy and problem readings.
+      - type: custom:fch-plant-monitor-card
+        entity: plant.monstera
+        name: Living room Monstera
+        image: /local/plants/monstera.png
+      - type: custom:fch-plant-monitor-card
+        entity: plant.fern
+        name: Bedroom Fern
+        image: /local/plants/fern.png
+        display_type: compact

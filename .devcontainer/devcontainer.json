@@ -1,0 +1,19 @@
+{
+  "name": "Home Assistant Plant Monitor Card",
+  "image": "ghcr.io/home-assistant/home-assistant:stable",
+  "overrideCommand": false,
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/${localWorkspaceFolderBasename},type=bind",
+  "mounts": [
+    "source=${localWorkspaceFolder}/config,target=/config,type=bind",
+    "source=${localWorkspaceFolder}/src,target=/config/www,type=bind"
+  ],
+  "forwardPorts": [8123],
+  "portsAttributes": {
+    "8123": {
+      "label": "Home Assistant",
+      "onAutoForward": "openBrowser"
+    }
+  },
+  "remoteUser": "root"
+}

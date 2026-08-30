@@ -1,0 +1,20 @@
+# Home Assistant test-instance runtime data. Keep only the fixture YAML and
+# the empty www directory needed as a container mount target.
+config/*
+!config/configuration.yaml
+!config/ui-lovelace.yaml
+!config/www/
+config/www/*
+!config/www/.gitkeep
+
+# Secrets and local overrides
+config/secrets.yaml
+config/.HA_VERSION
+
+# Editor and operating-system files
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Development container local state
+.devcontainer/*.local.json

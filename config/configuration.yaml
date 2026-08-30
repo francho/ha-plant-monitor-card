@@ -1,0 +1,137 @@
+default_config:
+
+lovelace:
+  mode: yaml
+  resources:
+    - url: /local/fch-plant-monitor-card.js
+      type: module
+
+input_number:
+  monstera_moisture:
+    name: Monstera moisture
+    min: 0
+    max: 100
+    step: 1
+    unit_of_measurement: "%"
+    initial: 46
+  monstera_temperature:
+    name: Monstera temperature
+    min: 0
+    max: 50
+    step: 0.5
+    unit_of_measurement: "°C"
+    initial: 22
+  monstera_conductivity:
+    name: Monstera conductivity
+    min: 0
+    max: 5000
+    step: 10
+    unit_of_measurement: "µS/cm"
+    initial: 1200
+  monstera_brightness:
+    name: Monstera brightness
+    min: 0
+    max: 50000
+    step: 100
+    unit_of_measurement: lx
+    initial: 9000
+  monstera_battery:
+    name: Monstera battery
+    min: 0
+    max: 100
+    step: 1
+    unit_of_measurement: "%"
+    initial: 82
+
+  fern_moisture:
+    name: Fern moisture
+    min: 0
+    max: 100
+    step: 1
+    unit_of_measurement: "%"
+    initial: 68
+  fern_temperature:
+    name: Fern temperature
+    min: 0
+    max: 50
+    step: 0.5
+    unit_of_measurement: "°C"
+    initial: 19
+  fern_battery:
+    name: Fern battery
+    min: 0
+    max: 100
+    step: 1
+    unit_of_measurement: "%"
+    initial: 15
+
+template:
+  - sensor:
+      - name: Monstera moisture
+        unique_id: monstera_moisture_sensor
+        state: "{{ states('input_number.monstera_moisture') }}"
+        unit_of_measurement: "%"
+        device_class: moisture
+      - name: Monstera temperature
+        unique_id: monstera_temperature_sensor
+        state: "{{ states('input_number.monstera_temperature') }}"
+        unit_of_measurement: "°C"
+        device_class: temperature
+      - name: Monstera conductivity
+        unique_id: monstera_conductivity_sensor
+        state: "{{ states('input_number.monstera_conductivity') }}"
+        unit_of_measurement: "µS/cm"
+      - name: Monstera brightness
+        unique_id: monstera_brightness_sensor
+        state: "{{ states('input_number.monstera_brightness') }}"
+        unit_of_measurement: lx
+        device_class: illuminance
+      - name: Monstera battery
+        unique_id: monstera_battery_sensor
+        state: "{{ states('input_number.monstera_battery') }}"
+        unit_of_measurement: "%"
+        device_class: battery
+
+      - name: Fern moisture
+        unique_id: fern_moisture_sensor
+        state: "{{ states('input_number.fern_moisture') }}"
+        unit_of_measurement: "%"
+        device_class: moisture
+      - name: Fern temperature
+        unique_id: fern_temperature_sensor
+        state: "{{ states('input_number.fern_temperature') }}"
+        unit_of_measurement: "°C"
+        device_class: temperature
+      - name: Fern battery
+        unique_id: fern_battery_sensor
+        state: "{{ states('input_number.fern_battery') }}"
+        unit_of_measurement: "%"
+        device_class: battery
+
+plant:
+  monstera:
+    sensors:
+      moisture: sensor.monstera_moisture
+      temperature: sensor.monstera_temperature
+      conductivity: sensor.monstera_conductivity
+      brightness: sensor.monstera_brightness
+      battery: sensor.monstera_battery
+    min_moisture: 35
+    max_moisture: 70
+    min_temperature: 18
+    max_temperature: 28
+    min_conductivity: 700
+    max_conductivity: 2500
+    min_brightness: 5000
+    max_brightness: 30000
+    min_battery: 20
+  fern:
+    sensors:
+      moisture: sensor.fern_moisture
+      temperature: sensor.fern_temperature
+      battery: sensor.fern_battery
+    min_moisture: 55
+    max_moisture: 85
+    min_temperature: 16
+    max_temperature: 25
+    min_battery: 20

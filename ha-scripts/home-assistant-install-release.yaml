@@ -1,0 +1,18 @@
+# Add this `shell_command` and `script` configuration to Home Assistant.
+# The command requires `wget` and `unzip` to be available in the Home Assistant
+# environment and installs the card into /config/www.
+
+shell_command:
+  install_fch_plant_monitor_card: >-
+    wget -qO /tmp/fch-plant-monitor-card.zip
+    https://github.com/francho/ha-plant-monitor-card/releases/latest/download/fch-plant-monitor-card.zip
+    && unzip -o /tmp/fch-plant-monitor-card.zip -d /config/www
+    && rm -f /tmp/fch-plant-monitor-card.zip
+
+script:
+  install_fch_plant_monitor_card:
+    alias: Install FCH Plant Monitor Card
+    description: Download and install the latest FCH Plant Monitor Card release.
+    sequence:
+      - action: shell_command.install_fch_plant_monitor_card
+    mode: single
