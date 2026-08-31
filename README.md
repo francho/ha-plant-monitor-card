@@ -53,9 +53,6 @@ max_moisture: 70
 | `entity` | Yes | — | A built-in `plant.*` entity. |
 | `name` | No | Entity friendly name | Heading displayed by the card. |
 | `image` | No | Entity picture, if present | A local or remote image URL. Use `/local/plants/<file>.png` for the included images. |
-| `display_type` | No | `full` | Use `compact` for a more compact heading and to hide units by default. |
-| `hide_units` | No | `false` in full mode, `true` in compact mode | Hides units beside temperature, conductivity, and brightness readings. |
-| `hide_image` | No | `false` | Replaces the plant image with a leaf icon. |
 | `min_moisture`, `max_moisture` | No | — | Healthy moisture range. |
 
 The card reads sensor entity IDs and problem descriptions from the selected plant entity. Home Assistant does not expose most Plant Monitor threshold attributes (apart from `max_brightness`), so configure `min_moisture` and `max_moisture` on the card. They are read from the card configuration (`this._config`).

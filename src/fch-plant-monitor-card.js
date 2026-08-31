@@ -8,10 +8,7 @@ class FchPlantMonitorCard extends HTMLElement {
       throw new Error("The 'entity' option is required for fch-plant-monitor-card.");
     }
 
-    this._config = {
-      display_type: "full",
-      ...config,
-    };
+    this._config = { ...config };
     this._render(true);
   }
 
@@ -21,7 +18,7 @@ class FchPlantMonitorCard extends HTMLElement {
   }
 
   getCardSize() {
-    return this._config?.display_type === "compact" ? 3 : 5;
+    return 5;
   }
 
   _render(force = false) {
@@ -37,19 +34,16 @@ class FchPlantMonitorCard extends HTMLElement {
 
     const attributes = plant.attributes || {};
     const sensors = attributes.sensors || {};
-    const compact = this._config.display_type === "compact";
-    const name = this._config.name || attributes.friendly_name || plant.entity_id;
+    const name = (this._config.name || attributes.friendly_name || plant.entity_id).replace(/_/g, " ");
     const status = plant.state === "ok" ? "ok" : plant.state === "problem" ? "problem" : "unknown";
-    const image = this._config.hide_image ? "" : this._config.image || attributes.entity_picture;
-    const showUnits = this._config.hide_units !== undefined ? !this._config.hide_units : !compact;
-    const columns = this._config.bars_per_row || (compact ? 1 : 2);
+    const image = this._config.image || attributes.entity_picture;
     const moisture = this._renderBar(
       sensors.moisture,
       this._config.min_moisture,
       this._config.max_moisture
     );
     const readings = ["temperature", "conductivity", "brightness"]
-      .map((type) => this._renderValue(type, sensors[type], showUnits))
+      .map((type) => this._renderValue(type, sensors[type]))
       .filter(Boolean)
       .join("");
     const battery = this._renderBattery(sensors.battery);
@@ -63,9 +57,9 @@ class FchPlantMonitorCard extends HTMLElement {
         .image, .image-placeholder { width: 56px; height: 56px; border-radius: 50%; flex: 0 0 auto; }
         .image { object-fit: cover; background: var(--secondary-background-color); box-shadow: 0 2px 8px rgba(0, 0, 0, .2); }
         .image-placeholder { display: grid; place-items: center; background: var(--secondary-background-color); color: var(--primary-color); }
-        .image-placeholder ha-icon { --mdc-icon-size: ${compact ? "28px" : "34px"}; }
+        .image-placeholder ha-icon { --mdc-icon-size: 34px; }
         .title { min-width: 0; flex: 1; }
-        .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: ${compact ? "1em" : "1.2em"}; font-weight: 500; letter-spacing: .01em; }
+        .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 1.2em; font-weight: 500; letter-spacing: .01em; }
         .entity { color: var(--secondary-text-color); font-size: .8em; margin-top: 3px; }
         .statuses { display: flex; flex-wrap: wrap; gap: 6px; }
         .status { display: inline-flex; align-items: center; gap: 4px; padding: 3px 7px; border-radius: 999px; font-size: .7em; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; background: var(--secondary-background-color); }
@@ -76,17 +70,18 @@ class FchPlantMonitorCard extends HTMLElement {
         .battery.good { color: var(--success-color, #43a047); }
         .battery.warning { color: var(--warning-color, #f9a825); }
         .battery.low { color: var(--error-color, #db4437); }
-        .measurements { display: grid; grid-template-columns: repeat(${columns === 1 ? 1 : 2}, minmax(0, 1fr)); gap: 12px 16px; padding: 2px 18px 4px;}
+        .measurements { padding: 2px 18px 4px;}
         .measurement { min-width: 0; }
         .reading { display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; align-items: center; column-gap: 6px; margin-bottom: 7px; font-size: .82em; }
         .reading ha-icon { --mdc-icon-size: 18px; color: var(--secondary-text-color); }
         .label { color: var(--secondary-text-color); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .value { font-weight: 500; white-space: nowrap; }
         .value.problem { color: var(--error-color, #db4437); }
-        .bar { position: relative; height: 18px; }
+        .bar { position: relative; height: 18px; margin-top: 26px; }
         .bar::before { position: absolute; inset: 0; border-radius: 0 0 0 0; background: linear-gradient(to right, #003481, #0387c4); clip-path: polygon(0 82%, 100% 0, 100% 100%, 0 100%); content: ""; }
         .bar.problem::before { background: var(--error-color, #db4437); }
         .marker { position: absolute; z-index: 3; top: -2px; left: calc(var(--position) - 11px); --mdc-icon-size: 22px; color: white; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .45)); }
+        .marker-value { position: absolute; z-index: 4; top: -24px; left: var(--position); transform: translateX(-50%); padding: 2px 5px; border-radius: 4px; background: var(--secondary-background-color); color: var(--primary-text-color); font-size: .75em; font-weight: 500; line-height: 1.2; white-space: nowrap; pointer-events: none; }
         .range { position: absolute; z-index: 2; right: 3px; bottom: 1px; left: 3px; display: flex; color: rgba(255, 255, 255, .7); font-size: .68em; line-height: 1; pointer-events: none; }
         .range-min { text-align: left; }
         .range-max { margin-left: auto; text-align: right; }
@@ -96,7 +91,6 @@ class FchPlantMonitorCard extends HTMLElement {
         .more-info-link:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 2px; }
         .sensor-value ha-icon { --mdc-icon-size: 18px; }
         .sensor-value-value { color: var(--primary-text-color); font-weight: 500; white-space: nowrap; }
-        @media (max-width: 360px) { .measurements { grid-template-columns: 1fr; } }
       </style>
       <ha-card>
         <div class="header">
@@ -191,15 +185,17 @@ class FchPlantMonitorCard extends HTMLElement {
     const upperBound = hasMin && hasMax ? maximum : Math.max(value, highReference) + padding;
     const span = Math.max(upperBound - lowerBound, 1);
     const position = this._clamp(((value - lowerBound) / span) * 100);
+    const unit = sensor.attributes.unit_of_measurement || "";
+    const currentLabel = `${this._format(value)}${unit ? ` ${unit}` : ""}`;
     const minimumLabel = hasMin ? `${this._format(minimum)}%` : "";
     const maximumLabel = hasMax ? `${this._format(maximum)}%` : "";
 
     return `<div class="measurement">
-      <div class="bar more-info-link ${healthy ? "" : "problem"}" style="--position: ${position}%;" data-entity-id="${this._escape(entityId)}" role="button" tabindex="0" aria-label="Show moisture sensor details"><ha-icon class="marker" icon="mdi:water-percent"></ha-icon><div class="range"><span class="range-min">${this._escape(minimumLabel)}</span><span class="range-max">${this._escape(maximumLabel)}</span></div></div>
+      <div class="bar more-info-link ${healthy ? "" : "problem"}" style="--position: ${position}%;" data-entity-id="${this._escape(entityId)}" role="button" tabindex="0" aria-label="Show moisture sensor details"><span class="marker-value">${this._escape(currentLabel)}</span><ha-icon class="marker" icon="mdi:water-percent"></ha-icon><div class="range"><span class="range-min">${this._escape(minimumLabel)}</span><span class="range-max">${this._escape(maximumLabel)}</span></div></div>
     </div>`;
   }
 
-  _renderValue(type, entityId, showUnits) {
+  _renderValue(type, entityId) {
     if (!entityId) return "";
 
     const sensor = this._hass.states[entityId];
@@ -213,7 +209,7 @@ class FchPlantMonitorCard extends HTMLElement {
     }[type];
     if (!details) return "";
 
-    const unit = showUnits ? sensor.attributes.unit_of_measurement || "" : "";
+    const unit = sensor.attributes.unit_of_measurement || "";
     const reading = `${this._format(value)}${unit ? ` ${unit}` : ""}`;
     return `<div class="sensor-value more-info-link" data-entity-id="${this._escape(entityId)}" role="button" tabindex="0" aria-label="Show ${this._escape(details[0])} sensor details" title="${this._escape(details[0])}"><ha-icon icon="${details[1]}"></ha-icon><span class="sensor-value-value">${this._escape(reading)}</span></div>`;
   }

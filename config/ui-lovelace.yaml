@@ -23,10 +23,8 @@ views:
                 max_temperature: 25
                 min_battery: 20
               - type: custom:fch-plant-monitor-card
-                entity: plant.fern
-                name: Bedroom Fern
+                entity: plant.living_room_fern
                 image: /local/plants/fern.png
-                display_type: compact
                 min_moisture: 35
                 max_moisture: 70
                 min_temperature: 18

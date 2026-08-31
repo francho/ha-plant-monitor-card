@@ -125,7 +125,7 @@ plant:
     min_brightness: 5000
     max_brightness: 30000
     min_battery: 20
-  fern:
+  living_room_fern:
     sensors:
       moisture: sensor.fern_moisture
       temperature: sensor.fern_temperature
