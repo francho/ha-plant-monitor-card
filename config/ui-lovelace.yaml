@@ -3,17 +3,53 @@ views:
   - title: Plants
     path: plants
     icon: mdi:leaf
+    type: panel
     cards:
-      - type: markdown
-        content: |
-          # Plant Monitor Card
-          Change the **input_number** helpers in Developer Tools to test healthy and problem readings.
-      - type: custom:fch-plant-monitor-card
-        entity: plant.monstera
-        name: Living room Monstera
-        image: /local/plants/monstera.png
-      - type: custom:fch-plant-monitor-card
-        entity: plant.fern
-        name: Bedroom Fern
-        image: /local/plants/fern.png
-        display_type: compact
+      - type: vertical-stack
+        cards:
+          - type: markdown
+            content: |
+              # Plant Monitor Card
+              Adjust the **input_number** helpers below to test healthy and problem readings.
+          - type: horizontal-stack
+            cards:
+              - type: custom:fch-plant-monitor-card
+                entity: plant.monstera
+                name: Living room Monstera
+                image: /local/plants/monstera.png
+                min_moisture: 55
+                max_moisture: 85
+                min_temperature: 16
+                max_temperature: 25
+                min_battery: 20
+              - type: custom:fch-plant-monitor-card
+                entity: plant.fern
+                name: Bedroom Fern
+                image: /local/plants/fern.png
+                display_type: compact
+                min_moisture: 35
+                max_moisture: 70
+                min_temperature: 18
+                max_temperature: 28
+                min_conductivity: 700
+                max_conductivity: 2500
+                min_brightness: 5000
+                max_brightness: 30000
+          - type: horizontal-stack
+            cards:     
+            - type: entities
+              title: monstera sensor simulator
+              show_header_toggle: true
+              entities:
+                - entity: input_number.monstera_moisture
+                - entity: input_number.monstera_temperature
+                - entity: input_number.monstera_conductivity
+                - entity: input_number.monstera_brightness
+                - entity: input_number.monstera_battery
+            - type: entities
+              title: fern sensor simulator
+              show_header_toggle: true
+              entities:
+                - entity: input_number.fern_moisture
+                - entity: input_number.fern_temperature
+                - entity: input_number.fern_battery

@@ -10,7 +10,6 @@ class FchPlantMonitorCard extends HTMLElement {
 
     this._config = {
       display_type: "full",
-      show_bars: ["moisture", "temperature", "conductivity", "brightness"],
       ...config,
     };
     this._render();
@@ -33,7 +32,7 @@ class FchPlantMonitorCard extends HTMLElement {
       this.innerHTML = `<ha-card><div class="error">Entity not found: ${this._escape(this._config.entity)}</div></ha-card>`;
       return;
     }
-
+console.log("Plant entity:", plant);
     const attributes = plant.attributes || {};
     const sensors = attributes.sensors || {};
     const compact = this._config.display_type === "compact";
@@ -42,9 +41,15 @@ class FchPlantMonitorCard extends HTMLElement {
     const image = this._config.hide_image ? "" : this._config.image || attributes.entity_picture;
     const showUnits = this._config.hide_units !== undefined ? !this._config.hide_units : !compact;
     const columns = this._config.bars_per_row || (compact ? 1 : 2);
-    const bars = (this._config.show_bars || []).map((type) =>
-      this._renderBar(type, sensors[type], attributes[`min_${type}`], attributes[`max_${type}`], showUnits)
-    ).filter(Boolean).join("");
+    const moisture = this._renderBar(
+      sensors.moisture,
+      this._config.min_moisture,
+      this._config.max_moisture
+    );
+    const readings = ["temperature", "conductivity", "brightness"]
+      .map((type) => this._renderValue(type, sensors[type], showUnits))
+      .filter(Boolean)
+      .join("");
     const battery = this._renderBattery(sensors.battery);
 
     this.innerHTML = `
@@ -52,69 +57,114 @@ class FchPlantMonitorCard extends HTMLElement {
         :host { display: block; }
         ha-card { overflow: hidden; background: var(--ha-card-background, var(--card-background-color)); }
         .error { padding: 16px; color: var(--error-color); }
-        .header { display: flex; align-items: center; gap: 14px; padding: 18px 18px 14px; cursor: pointer; }
-        .header:focus-visible { outline: 2px solid var(--primary-color); outline-offset: -2px; }
-        .image, .image-placeholder { width: ${compact ? "56px" : "72px"}; height: ${compact ? "56px" : "72px"}; border-radius: 50%; flex: 0 0 auto; }
+        .header { display: flex; align-items: center; gap: 14px; padding: 18px 18px 14px; }
+        .image, .image-placeholder { width: 56px; height: 56px; border-radius: 50%; flex: 0 0 auto; }
         .image { object-fit: cover; background: var(--secondary-background-color); box-shadow: 0 2px 8px rgba(0, 0, 0, .2); }
         .image-placeholder { display: grid; place-items: center; background: var(--secondary-background-color); color: var(--primary-color); }
         .image-placeholder ha-icon { --mdc-icon-size: ${compact ? "28px" : "34px"}; }
         .title { min-width: 0; flex: 1; }
         .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: ${compact ? "1em" : "1.2em"}; font-weight: 500; letter-spacing: .01em; }
         .entity { color: var(--secondary-text-color); font-size: .8em; margin-top: 3px; }
-        .status { display: inline-flex; align-items: center; gap: 4px; margin-top: 8px; padding: 3px 7px; border-radius: 999px; font-size: .7em; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; background: var(--secondary-background-color); }
+        .statuses { display: flex; flex-wrap: wrap; gap: 6px; }
+        .status { display: inline-flex; align-items: center; gap: 4px; padding: 3px 7px; border-radius: 999px; font-size: .7em; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; background: var(--secondary-background-color); }
         .status ha-icon { --mdc-icon-size: 14px; }
-        .status.ok { color: var(--success-color, #43a047); }
         .status.problem { color: var(--error-color, #db4437); }
-        .status.unknown { color: var(--secondary-text-color); }
-        .battery { color: var(--secondary-text-color); display: flex; align-items: center; gap: 2px; align-self: flex-start; font-size: .75em; }
+        .battery { color: var(--secondary-text-color); display: flex; align-items: center; gap: 2px; align-self: flex-start; font-size: .75em; flex-direction: column; }
         .battery ha-icon { --mdc-icon-size: 23px; }
         .battery.good { color: var(--success-color, #43a047); }
         .battery.warning { color: var(--warning-color, #f9a825); }
         .battery.low { color: var(--error-color, #db4437); }
-        .measurements { display: grid; grid-template-columns: repeat(${columns === 1 ? 1 : 2}, minmax(0, 1fr)); gap: 12px 16px; padding: 2px 18px 18px; }
+        .measurements { display: grid; grid-template-columns: repeat(${columns === 1 ? 1 : 2}, minmax(0, 1fr)); gap: 12px 16px; padding: 2px 18px 4px;}
         .measurement { min-width: 0; }
         .reading { display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; align-items: center; column-gap: 6px; margin-bottom: 7px; font-size: .82em; }
         .reading ha-icon { --mdc-icon-size: 18px; color: var(--secondary-text-color); }
         .label { color: var(--secondary-text-color); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .value { font-weight: 500; white-space: nowrap; }
         .value.problem { color: var(--error-color, #db4437); }
-        .bar { position: relative; height: 8px; border-radius: 999px; background: linear-gradient(to right, var(--error-color, #db4437) 0 var(--lower), var(--success-color, #43a047) var(--lower) var(--upper), var(--error-color, #db4437) var(--upper) 100%); }
-        .bar::before, .bar::after { position: absolute; top: -2px; z-index: 1; width: 2px; height: 12px; border-radius: 2px; background: var(--primary-text-color); content: ""; opacity: .45; }
-        .bar::before { left: var(--lower); transform: translateX(-1px); }
-        .bar::after { left: var(--upper); transform: translateX(-1px); }
-        .marker { position: absolute; z-index: 2; top: -3px; left: calc(var(--position) - 7px); width: 14px; height: 14px; box-sizing: border-box; border: 3px solid var(--card-background-color, white); border-radius: 50%; background: var(--marker-color); box-shadow: 0 1px 4px rgba(0, 0, 0, .35); }
-        .range { min-height: 14px; margin-top: 5px; color: var(--secondary-text-color); font-size: .68em; }
+        .bar { position: relative; height: 18px; }
+        .bar::before { position: absolute; inset: 0; border-radius: 0 0 0 0; background: linear-gradient(to right, #003481, #0387c4); clip-path: polygon(0 82%, 100% 0, 100% 100%, 0 100%); content: ""; }
+        .bar.problem::before { background: var(--error-color, #db4437); }
+        .marker { position: absolute; z-index: 3; top: -2px; left: calc(var(--position) - 11px); --mdc-icon-size: 22px; color: white; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .45)); }
+        .range { position: absolute; z-index: 2; right: 3px; bottom: 1px; left: 3px; display: flex; color: rgba(255, 255, 255, .7); font-size: .68em; line-height: 1; pointer-events: none; }
+        .range-min { text-align: left; }
+        .range-max { margin-left: auto; text-align: right; }
+        .sensor-values { display: flex; flex-wrap: wrap; gap: 12px 16px; justify-content: space-between; padding: 2px 18px 18px;}
+        .sensor-value { display: inline-flex; align-items: center; gap: 5px; color: var(--secondary-text-color); font-size: .82em; }
+        .more-info-link { cursor: pointer; }
+        .more-info-link:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 2px; }
+        .sensor-value ha-icon { --mdc-icon-size: 18px; }
+        .sensor-value-value { color: var(--primary-text-color); font-weight: 500; white-space: nowrap; }
         @media (max-width: 360px) { .measurements { grid-template-columns: 1fr; } }
       </style>
       <ha-card>
-        <div class="header" role="button" tabindex="0" aria-label="Show ${this._escape(name)} details">
-          ${image ? `<img class="image" src="${this._escape(image)}" alt="" />` : '<div class="image-placeholder"><ha-icon icon="mdi:leaf"></ha-icon></div>'}
+        <div class="header">
+          ${image ? `<img class="image more-info-link" src="${this._escape(image)}" alt="" data-entity-id="${this._escape(this._config.entity)}" role="button" tabindex="0" aria-label="Show ${this._escape(name)} details" />` : `<div class="image-placeholder more-info-link" data-entity-id="${this._escape(this._config.entity)}" role="button" tabindex="0" aria-label="Show ${this._escape(name)} details"><ha-icon icon="mdi:leaf"></ha-icon></div>`}
           <div class="title">
-            <div class="name">${this._escape(name)}</div>
-            <div class="entity">${this._escape(this._config.entity)}</div>
-            ${this._renderStatus(status)}
+            <div class="name more-info-link" data-entity-id="${this._escape(this._config.entity)}" role="button" tabindex="0" aria-label="Show ${this._escape(name)} details">${this._escape(name)}</div>
+            ${this._renderStatus(status, attributes.problem, this._config.entity)}
+            </div>
+            ${battery}
           </div>
-          ${battery}
-        </div>
-        ${bars ? `<div class="measurements">${bars}</div>` : '<div class="error">No supported plant sensors are configured.</div>'}
+          ${moisture ? `<div class="measurements">${moisture}</div>` : '<div class="error">No moisture sensor is configured.</div>'}
+          ${readings ? `<div class="sensor-values">${readings}</div>` : ""}
       </ha-card>`;
 
-    this.querySelector(".header")?.addEventListener("click", () => this._showMoreInfo());
-    this.querySelector(".header")?.addEventListener("keydown", (event) => {
-      if (event.key === "Enter" || event.key === " ") this._showMoreInfo();
+    this.querySelectorAll(".more-info-link").forEach((element) => {
+      const showMoreInfo = () => this._showMoreInfo(element.dataset.entityId);
+      element.addEventListener("click", (event) => {
+        event.stopPropagation();
+        showMoreInfo();
+      });
+      element.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          event.stopPropagation();
+          showMoreInfo();
+        }
+      });
     });
   }
 
-  _renderStatus(status) {
-    const details = {
-      ok: ["mdi:check-circle", "Healthy"],
-      problem: ["mdi:alert-circle", "Needs attention"],
-      unknown: ["mdi:help-circle", "Unknown"],
-    }[status];
-    return `<div class="status ${status}"><ha-icon icon="${details[0]}"></ha-icon>${details[1]}</div>`;
+  _renderStatus(status, problem, entityId) {
+    if (status !== "problem") return "";
+
+    const problems = Array.isArray(problem) ? problem : String(problem || "").split(/\s*,\s*/);
+    const labels = problems.map((item) => String(item).trim()).filter(Boolean);
+    const badges = (labels.length ? labels : ["Needs attention"])
+      .map((label) => `<div class="status problem more-info-link" data-entity-id="${this._escape(entityId)}" role="button" tabindex="0" aria-label="Show ${this._escape(label)} details"><ha-icon icon="mdi:alert-circle"></ha-icon>${this._escape(label)}</div>`)
+      .join("");
+
+    return `<div class="statuses">${badges}</div>`;
   }
 
-  _renderBar(type, entityId, min, max, showUnits) {
+  _renderBar(entityId, min, max) {
+    if (!entityId) return "";
+
+    const sensor = this._hass.states[entityId];
+    const value = Number(sensor?.state);
+    if (!sensor || !Number.isFinite(value)) return "";
+
+    const hasMin = min !== undefined && min !== null && min !== "" && Number.isFinite(Number(min));
+    const hasMax = max !== undefined && max !== null && max !== "" && Number.isFinite(Number(max));
+    const minimum = hasMin ? Number(min) : undefined;
+    const maximum = hasMax ? Number(max) : undefined;
+    const healthy = (!hasMin || value >= minimum) && (!hasMax || value <= maximum);
+    const lowReference = hasMin ? minimum : hasMax ? Math.min(value, maximum) : value;
+    const highReference = hasMax ? maximum : hasMin ? Math.max(value, minimum) : value;
+    const padding = Math.max(Math.abs(highReference - lowReference) * 0.2, Math.abs(value) * 0.1, 1);
+    const lowerBound = hasMin && hasMax ? minimum : Math.min(value, lowReference) - padding;
+    const upperBound = hasMin && hasMax ? maximum : Math.max(value, highReference) + padding;
+    const span = Math.max(upperBound - lowerBound, 1);
+    const position = this._clamp(((value - lowerBound) / span) * 100);
+    const minimumLabel = hasMin ? `${this._format(minimum)}%` : "";
+    const maximumLabel = hasMax ? `${this._format(maximum)}%` : "";
+
+    return `<div class="measurement">
+      <div class="bar more-info-link ${healthy ? "" : "problem"}" style="--position: ${position}%;" data-entity-id="${this._escape(entityId)}" role="button" tabindex="0" aria-label="Show moisture sensor details"><ha-icon class="marker" icon="mdi:water-percent"></ha-icon><div class="range"><span class="range-min">${this._escape(minimumLabel)}</span><span class="range-max">${this._escape(maximumLabel)}</span></div></div>
+    </div>`;
+  }
+
+  _renderValue(type, entityId, showUnits) {
     if (!entityId) return "";
 
     const sensor = this._hass.states[entityId];
@@ -122,31 +172,15 @@ class FchPlantMonitorCard extends HTMLElement {
     if (!sensor || !Number.isFinite(value)) return "";
 
     const details = {
-      moisture: ["Moisture", "mdi:water-percent"],
       temperature: ["Temperature", "mdi:thermometer"],
       conductivity: ["Conductivity", "mdi:lightning-bolt"],
       brightness: ["Light", "mdi:white-balance-sunny"],
     }[type];
     if (!details) return "";
-    const hasMin = Number.isFinite(Number(min));
-    const hasMax = Number.isFinite(Number(max));
-    const minimum = hasMin ? Number(min) : undefined;
-    const maximum = hasMax ? Number(max) : undefined;
-    const healthy = (!hasMin || value >= minimum) && (!hasMax || value <= maximum);
-    const lowerBound = hasMin ? Math.min(0, minimum * 0.6) : 0;
-    const upperBound = hasMax ? maximum * 1.4 : Math.max(value * 1.25, (minimum || 0) * 1.5, 1);
-    const span = Math.max(upperBound - lowerBound, 1);
-    const position = this._clamp(((value - lowerBound) / span) * 100);
-    const lower = hasMin ? this._clamp(((minimum - lowerBound) / span) * 100) : 0;
-    const upper = hasMax ? this._clamp(((maximum - lowerBound) / span) * 100) : 100;
-    const unit = showUnits ? sensor.attributes.unit_of_measurement || "" : "";
-    const range = [hasMin ? `min ${this._format(minimum)}` : "", hasMax ? `max ${this._format(maximum)}` : ""].filter(Boolean).join(" – ");
 
-    return `<div class="measurement">
-      <div class="reading"><ha-icon icon="${details[1]}"></ha-icon><span class="label">${details[0]}</span><span class="value ${healthy ? "" : "problem"}">${this._escape(this._format(value))}${unit ? ` ${this._escape(unit)}` : ""}</span></div>
-      <div class="bar" style="--position: ${position}%; --lower: ${lower}%; --upper: ${upper}%; --marker-color: ${healthy ? "var(--success-color, #43a047)" : "var(--error-color, #db4437)"};"><span class="marker"></span></div>
-      <div class="range">${this._escape(range)}${range && unit ? ` ${this._escape(unit)}` : ""}</div>
-    </div>`;
+    const unit = showUnits ? sensor.attributes.unit_of_measurement || "" : "";
+    const reading = `${this._format(value)}${unit ? ` ${unit}` : ""}`;
+    return `<div class="sensor-value more-info-link" data-entity-id="${this._escape(entityId)}" role="button" tabindex="0" aria-label="Show ${this._escape(details[0])} sensor details" title="${this._escape(details[0])}"><ha-icon icon="${details[1]}"></ha-icon><span class="sensor-value-value">${this._escape(reading)}</span></div>`;
   }
 
   _renderBattery(entityId) {
@@ -158,11 +192,11 @@ class FchPlantMonitorCard extends HTMLElement {
 
     const level = value >= 40 ? "good" : value >= 20 ? "warning" : "low";
     const icon = value >= 95 ? "mdi:battery" : value < 10 ? "mdi:battery-outline" : `mdi:battery-${Math.floor(value / 10) * 10}`;
-    return `<div class="battery ${level}" title="Battery: ${this._escape(this._format(value))}%"><ha-icon icon="${icon}"></ha-icon><span>${this._escape(this._format(value))}%</span></div>`;
+    return `<div class="battery more-info-link ${level}" data-entity-id="${this._escape(entityId)}" role="button" tabindex="0" aria-label="Show battery sensor details" title="Battery: ${this._escape(this._format(value))}%"><ha-icon icon="${icon}"></ha-icon><span>${this._escape(this._format(value))}%</span></div>`;
   }
 
-  _showMoreInfo() {
-    this.dispatchEvent(new CustomEvent("hass-more-info", { detail: { entityId: this._config.entity }, bubbles: true, composed: true }));
+  _showMoreInfo(entityId = this._config.entity) {
+    this.dispatchEvent(new CustomEvent("hass-more-info", { detail: { entityId }, bubbles: true, composed: true }));
   }
 
   _clamp(value) {
