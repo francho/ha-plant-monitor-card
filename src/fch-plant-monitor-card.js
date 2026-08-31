@@ -12,7 +12,7 @@ class FchPlantMonitorCard extends HTMLElement {
       display_type: "full",
       ...config,
     };
-    this._render();
+    this._render(true);
   }
 
   set hass(hass) {
@@ -24,15 +24,17 @@ class FchPlantMonitorCard extends HTMLElement {
     return this._config?.display_type === "compact" ? 3 : 5;
   }
 
-  _render() {
+  _render(force = false) {
     if (!this._config || !this._hass) return;
+    if (!force && !this._hasRelevantStateChanged()) return;
 
     const plant = this._hass.states[this._config.entity];
     if (!plant) {
       this.innerHTML = `<ha-card><div class="error">Entity not found: ${this._escape(this._config.entity)}</div></ha-card>`;
+      this._rememberRenderedStates();
       return;
     }
-console.log("Plant entity:", plant);
+
     const attributes = plant.attributes || {};
     const sensors = attributes.sensors || {};
     const compact = this._config.display_type === "compact";
@@ -123,6 +125,39 @@ console.log("Plant entity:", plant);
         }
       });
     });
+
+    this._rememberRenderedStates();
+  }
+
+  _hasRelevantStateChanged() {
+    if (!this._renderedStates) return true;
+
+    const entityIds = this._getWatchedEntityIds();
+    if (entityIds.size !== this._renderedStates.size) return true;
+
+    return [...entityIds].some(
+      (entityId) =>
+        !this._renderedStates.has(entityId) ||
+        this._renderedStates.get(entityId) !== this._hass.states[entityId]
+    );
+  }
+
+  _rememberRenderedStates() {
+    this._renderedStates = new Map(
+      [...this._getWatchedEntityIds()].map((entityId) => [entityId, this._hass.states[entityId]])
+    );
+  }
+
+  _getWatchedEntityIds() {
+    const plant = this._hass.states[this._config.entity];
+    const sensors = plant?.attributes?.sensors || {};
+    const entityIds = new Set([this._config.entity]);
+
+    Object.values(sensors).forEach((entityId) => {
+      if (typeof entityId === "string" && entityId) entityIds.add(entityId);
+    });
+
+    return entityIds;
   }
 
   _renderStatus(status, problem, entityId) {
