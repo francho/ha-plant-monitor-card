@@ -67,22 +67,23 @@ class FchPlantMonitorCard extends HTMLElement {
         .status.problem { color: var(--error-color, #db4437); }
         .battery { color: var(--secondary-text-color); display: flex; align-items: center; gap: 2px; align-self: flex-start; font-size: .75em; flex-direction: column; }
         .battery ha-icon { --mdc-icon-size: 23px; }
-        .battery.good { color: var(--success-color, #43a047); }
+        .battery.good_off { color: var(--success-color, #43a047); }
         .battery.warning { color: var(--warning-color, #f9a825); }
         .battery.low { color: var(--error-color, #db4437); }
-        .measurements { padding: 2px 18px 4px;}
+        .measurements { padding: 2px 18px 12px;}
         .measurement { min-width: 0; }
         .reading { display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; align-items: center; column-gap: 6px; margin-bottom: 7px; font-size: .82em; }
         .reading ha-icon { --mdc-icon-size: 18px; color: var(--secondary-text-color); }
         .label { color: var(--secondary-text-color); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .value { font-weight: 500; white-space: nowrap; }
         .value.problem { color: var(--error-color, #db4437); }
-        .bar { position: relative; height: 18px; margin-top: 26px; }
-        .bar::before { position: absolute; inset: 0; border-radius: 0 0 0 0; background: linear-gradient(to right, #003481, #0387c4); clip-path: polygon(0 82%, 100% 0, 100% 100%, 0 100%); content: ""; }
+        .bar { position: relative; height: 16px; margin-top: 4px; }
+        .bar::before { position: absolute; inset: 0; border-radius: 2px; background: linear-gradient(to right, #003481, #009ac7); clip-path: polygon(0 82%, 100% 0, 100% 100%, 0 100%); content: ""; }
         .bar.problem::before { background: var(--error-color, #db4437); }
-        .marker { position: absolute; z-index: 3; top: -2px; left: calc(var(--position) - 11px); --mdc-icon-size: 22px; color: white; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .45)); }
-        .marker-value { position: absolute; z-index: 4; top: -24px; left: var(--position); transform: translateX(-50%); padding: 2px 5px; border-radius: 4px; background: var(--secondary-background-color); color: var(--primary-text-color); font-size: .75em; font-weight: 500; line-height: 1.2; white-space: nowrap; pointer-events: none; }
-        .range { position: absolute; z-index: 2; right: 3px; bottom: 1px; left: 3px; display: flex; color: rgba(255, 255, 255, .7); font-size: .68em; line-height: 1; pointer-events: none; }
+        .marker-container { position: absolute; z-index: 3; top: -16px; left: calc(var(--position) - 22px); display: grid; width: 44px; height: 44px; place-items: center; }
+        .marker { grid-area: 1 / 1; --mdc-icon-size: 44px; color: #009ac7; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .45)); }
+        .marker-value { z-index: 1; grid-area: 1 / 1; width: 30px; padding-top: 5px; color: rgba(255, 255, 255, .90); font-size: .7em; font-weight: 700; line-height: 1; text-align: center; white-space: nowrap; letter-spacing: -.1em; pointer-events: none; }
+        .range { position: absolute; z-index: 2; right: 3px; bottom: 1px; left: 3px; display: flex; color: rgba(255, 255, 255, .7); font-size: .68em; line-height: 1; pointer-events: none; opacity: .6}
         .range-min { text-align: left; }
         .range-max { margin-left: auto; text-align: right; }
         .sensor-values { display: flex; flex-wrap: wrap; gap: 12px 16px; justify-content: space-between; padding: 2px 18px 18px;}
@@ -190,8 +191,18 @@ class FchPlantMonitorCard extends HTMLElement {
     const minimumLabel = hasMin ? `${this._format(minimum)}%` : "";
     const maximumLabel = hasMax ? `${this._format(maximum)}%` : "";
 
-    return `<div class="measurement">
-      <div class="bar more-info-link ${healthy ? "" : "problem"}" style="--position: ${position}%;" data-entity-id="${this._escape(entityId)}" role="button" tabindex="0" aria-label="Show moisture sensor details"><span class="marker-value">${this._escape(currentLabel)}</span><ha-icon class="marker" icon="mdi:water-percent"></ha-icon><div class="range"><span class="range-min">${this._escape(minimumLabel)}</span><span class="range-max">${this._escape(maximumLabel)}</span></div></div>
+    return `
+    <div class="measurement">
+      <div class="bar more-info-link ${healthy ? "" : "problem"}" style="--position: ${position}%;" data-entity-id="${this._escape(entityId)}" role="button" tabindex="0" aria-label="Show moisture sensor details">
+        <div class="marker-container">
+          <span class="marker-value">${this._escape(currentLabel)}</span>
+          <ha-icon class="marker" icon="mdi:water"></ha-icon>
+        </div>
+        <div class="range">
+          <span class="range-min">${this._escape(minimumLabel)}</span>
+          <span class="range-max">${this._escape(maximumLabel)}</span>
+        </div>
+      </div>
     </div>`;
   }
 
